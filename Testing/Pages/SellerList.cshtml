@@ -1,0 +1,103 @@
+﻿@page
+@model Testing.Pages.SellerListModel
+@{
+}
+
+<h2>Sellers</h2>
+
+<table border="1">
+    <thead>
+        <tr>
+            <th>SellerID</th>
+            <th>Seller Name</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in Model.Sellers)
+        {
+            <tr>
+                <td>@s.SellerID</td>
+                <td>@s.SellerName</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<hr />
+
+<form method="post" asp-page-handler="LoadItems">
+    <input type="number" name="SelectedSellerID" placeholder="Enter Seller ID" required />
+    <button type="submit">Show Items</button>
+</form>
+
+<hr />
+
+@if (Model.Items.Count > 0)
+{
+    <h2>Items (InDA only)</h2>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>ItemID</th>
+                <th>Buyer</th>
+                <th>Price</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr onclick="selectItem(@item.ItemID)" style="cursor:pointer;">
+                    <td>
+                        <input type="radio" name="itemRadio" />
+                    </td>
+                    <td>@item.ItemID</td>
+                    <td>@item.BuyerName</td>
+                    <td>@item.Price</td>
+                    <td>@item.ItemStatus</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <input type="hidden" id="SelectedItemID" name="SelectedItemID" />
+
+    <br />
+
+    <!-- UPDATE -->
+    <form method="post" asp-page-handler="Update">
+        <input type="hidden" name="SelectedItemID" id="SelectedItemIDUpdate" />
+        <button type="submit">Update Item</button>
+    </form>
+
+    <br />
+
+    <!-- REMOVE (STATUS CHANGE ONLY) -->
+    <form method="post" asp-page-handler="Remove">
+        <input type="hidden" name="SelectedItemID" id="SelectedItemIDRemove" />
+        <input type="hidden" name="reason" id="reason" />
+
+        <button type="submit" onclick="return setReason('Picked Up')">
+            Mark as Picked Up
+        </button>
+
+        <button type="submit" onclick="return setReason('Pulled out')">
+            Mark as Pulled out
+        </button>
+    </form>
+}
+
+<script>
+    function selectItem(id) {
+        document.getElementById("SelectedItemIDUpdate").value = id;
+        document.getElementById("SelectedItemIDRemove").value = id;
+    }
+
+    function setReason(value) {
+        document.getElementById("reason").value = value;
+        return confirm("Confirm change status to: " + value);
+    }
+</script>
