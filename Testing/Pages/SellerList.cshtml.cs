@@ -6,146 +6,131 @@ namespace Testing.Pages
 {
     public class SellerListModel : PageModel
     {
-        public List<Seller> Sellers { get; set; } = new();
         public List<Item> Items { get; set; } = new();
+        public List<Seller> Sellers { get; set; } = new();
 
-        [BindProperty]
-        public int SelectedSellerID { get; set; }
+        [BindProperty] public int SellerID { get; set; }
+        [BindProperty] public int ItemID { get; set; }
+        [BindProperty] public string ActionType { get; set; }
 
-        [BindProperty]
-        public int SelectedItemID { get; set; }
+        public string? Message { get; set; }
 
-        [BindProperty]
-        public string reason { get; set; }
-
-        string connString = "server=localhost;port=1108;database=DropZoneDB;user=root;password=;";
+        string conn = "server=localhost;port=1108;database=DropZoneDB;user=root;password=;";
 
         public void OnGet()
         {
             LoadSellers();
         }
 
-        public void OnPostLoadItems()
+        public IActionResult OnPostLoadItems()
         {
             LoadSellers();
             LoadItems();
+            return Page();
         }
 
-        public void OnPostRemove()
+        public IActionResult OnPostProcessAction()
         {
-            using (MySqlConnection conn = new MySqlConnection(connString))
-            {
-                conn.Open();
+            if (string.Equals(ActionType, "Update", StringComparison.OrdinalIgnoreCase))
+                return RedirectToPage("UpdateItem", new { id = ItemID });
 
-                string query = "UPDATE Items SET itemStatus = @status WHERE ItemID = @id";
+            if (string.Equals(ActionType, "PickedUp", StringComparison.OrdinalIgnoreCase))
+                UpdateStatus("Picked Up");
 
-                using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@status", reason);
-                    cmd.Parameters.AddWithValue("@id", SelectedItemID);
-
-                    cmd.ExecuteNonQuery();
-                }
-            }
+            if (string.Equals(ActionType, "PulledOut", StringComparison.OrdinalIgnoreCase))
+                UpdateStatus("Pulled Out");
 
             LoadSellers();
             LoadItems();
+            return Page();
         }
 
-        public void OnPostUpdate()
+        void UpdateStatus(string status)
         {
-            using (MySqlConnection conn = new MySqlConnection(connString))
-            {
-                conn.Open();
+            using var c = new MySqlConnection(conn);
+            c.Open();
 
-                string query = @"
-                    UPDATE Items 
-                    SET BuyerName = 'Updated',
-                        Price = Price
-                    WHERE ItemID = @id";
-
-                using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@id", SelectedItemID);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            LoadSellers();
-            LoadItems();
+            var cmd = new MySqlCommand("UPDATE Items SET itemStatus=@s WHERE ItemID=@id", c);
+            cmd.Parameters.AddWithValue("@s", status);
+            cmd.Parameters.AddWithValue("@id", ItemID);
+            cmd.ExecuteNonQuery();
         }
 
-        private void LoadSellers()
+        void LoadSellers()
         {
             Sellers.Clear();
 
-            using (MySqlConnection conn = new MySqlConnection(connString))
+            using var c = new MySqlConnection(conn);
+            c.Open();
+
+            var cmd = new MySqlCommand("SELECT * FROM Sellers", c);
+            using var r = cmd.ExecuteReader();
+
+            while (r.Read())
             {
-                conn.Open();
-
-                string query = "SELECT * FROM Sellers";
-
-                using (MySqlCommand cmd = new MySqlCommand(query, conn))
-                using (MySqlDataReader reader = cmd.ExecuteReader())
+                Sellers.Add(new Seller
                 {
-                    while (reader.Read())
-                    {
-                        Sellers.Add(new Seller
-                        {
-                            SellerID = reader.GetInt32("SellerID"),
-                            SellerName = reader.GetString("SellerName")
-                        });
-                    }
-                }
+                    SellerID = r.GetInt32("SellerID"),
+                    SellerName = r.GetString("SellerName"),
+                    DateAdded = r.GetString("DateAdded")
+                });
             }
         }
 
-        private void LoadItems()
+        void LoadItems()
         {
             Items.Clear();
 
-            using (MySqlConnection conn = new MySqlConnection(connString))
+            using var c = new MySqlConnection(conn);
+            c.Open();
+
+            var cmd = new MySqlCommand("SELECT * FROM Items WHERE SellerID=@id AND itemStatus='InDA'", c);
+            cmd.Parameters.AddWithValue("@id", SellerID);
+
+            using var r = cmd.ExecuteReader();
+
+            while (r.Read())
             {
-                conn.Open();
-
-                string query = @"
-                    SELECT * FROM Items 
-                    WHERE SellerID = @id 
-                    AND itemStatus = 'InDA'";
-
-                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                Items.Add(new Item
                 {
-                    cmd.Parameters.AddWithValue("@id", SelectedSellerID);
+                    ItemID = r.GetInt32("ItemID"),
+                    SellerID = r.GetInt32("SellerID"),
+                    BuyerName = r["BuyerName"]?.ToString(),
 
-                    using (MySqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            Items.Add(new Item
-                            {
-                                ItemID = reader.GetInt32("ItemID"),
-                                BuyerName = reader.GetString("BuyerName"),
-                                Price = reader.GetDecimal("price"),
-                                ItemStatus = reader.GetString("itemStatus")
-                            });
-                        }
-                    }
-                }
+                    DateDropped = r["DateDropped"] == DBNull.Value
+                        ? null
+                        : r.GetDateTime("DateDropped").ToString("yyyy-MM-dd"),
+
+                    Price = r.GetDecimal("price"),
+                    HoldingFee = r.GetInt32("holdingFee"),
+                    ItemStatus = r["itemStatus"]?.ToString(),
+                    Placed = r["placed"]?.ToString(),
+
+                    DatePickedUp = r["datePickedUp"] == DBNull.Value
+                        ? null
+                        : r.GetDateTime("datePickedUp").ToString("yyyy-MM-dd")
+                });
             }
         }
+    }
+
+    public class Item
+    {
+        public int ItemID { get; set; }
+        public int SellerID { get; set; }
+        public string? BuyerName { get; set; }
+        public string? DateDropped { get; set; }
+        public decimal Price { get; set; }
+        public int HoldingFee { get; set; }
+        public string? ItemStatus { get; set; }
+        public string? Placed { get; set; }
+        public string? DatePickedUp { get; set; }
     }
 
     public class Seller
     {
         public int SellerID { get; set; }
         public string SellerName { get; set; }
-    }
-
-    public class Item
-    {
-        public int ItemID { get; set; }
-        public string BuyerName { get; set; }
-        public decimal Price { get; set; }
-        public string ItemStatus { get; set; }
+        public string DateAdded { get; set; }
     }
 }

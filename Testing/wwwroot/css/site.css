@@ -75,3 +75,88 @@ hr {
     border: 0;
     border-top: 1px solid #ddd;
 }
+body {
+    background-color: #f4f6f8;
+    font-family: Arial, sans-serif;
+}
+
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
+}
+
+.title {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+/* ACTION BUTTONS */
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+    .btn:hover {
+        background-color: #0056b3;
+    }
+
+/* NOTES */
+.notes-section h2 {
+    margin-bottom: 10px;
+}
+
+.add-note {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+    .add-note input {
+        flex: 1;
+        padding: 8px;
+    }
+
+    .add-note button {
+        padding: 8px 12px;
+    }
+
+/* STICKY NOTES */
+.notes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.note {
+    background-color: #fff3a0;
+    padding: 15px;
+    width: 150px;
+    min-height: 100px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+}
+
+    .note button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        border: none;
+        background: red;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }

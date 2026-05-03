@@ -1,103 +1,137 @@
 ﻿@page
 @model Testing.Pages.SellerListModel
-@{
-}
 
 <h2>Sellers</h2>
 
 <table border="1">
-    <thead>
+    <tr>
+        <th>SellerID</th>
+        <th>Seller Name</th>
+        <th>Date Added</th>
+    </tr>
+
+    @foreach (var s in Model.Sellers)
+    {
         <tr>
-            <th>SellerID</th>
-            <th>Seller Name</th>
+            <td>@s.SellerID</td>
+            <td>@s.SellerName</td>
+            <td>@s.DateAdded</td>
         </tr>
-    </thead>
-    <tbody>
-        @foreach (var s in Model.Sellers)
-        {
-            <tr>
-                <td>@s.SellerID</td>
-                <td>@s.SellerName</td>
-            </tr>
-        }
-    </tbody>
+    }
 </table>
 
 <hr />
 
+<h3>Choose Seller</h3>
+
 <form method="post" asp-page-handler="LoadItems">
-    <input type="number" name="SelectedSellerID" placeholder="Enter Seller ID" required />
-    <button type="submit">Show Items</button>
+
+    <!-- SELLER NOW DROPDOWN -->
+    <select asp-for="SellerID" required>
+        <option value="">-- Select Seller --</option>
+        @foreach (var s in Model.Sellers)
+        {
+            <option value="@s.SellerID">
+                @s.SellerName (ID: @s.SellerID)
+            </option>
+        }
+    </select>
+
+    <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+
+        <button type="submit">
+            Load InDA Items
+        </button>
+
+        <button type="submit"
+                formaction="/AllItems?handler=Get"
+                formmethod="get">
+            Load All Items
+        </button>
+
+        <button type="submit"
+                formaction="/AddItem"
+                formmethod="get">
+            Add Item
+        </button>
+
+    </div>
 </form>
 
 <hr />
 
-@if (Model.Items.Count > 0)
+@if (!string.IsNullOrEmpty(Model.Message))
 {
-    <h2>Items (InDA only)</h2>
-
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Select</th>
-                <th>ItemID</th>
-                <th>Buyer</th>
-                <th>Price</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            @foreach (var item in Model.Items)
-            {
-                <tr onclick="selectItem(@item.ItemID)" style="cursor:pointer;">
-                    <td>
-                        <input type="radio" name="itemRadio" />
-                    </td>
-                    <td>@item.ItemID</td>
-                    <td>@item.BuyerName</td>
-                    <td>@item.Price</td>
-                    <td>@item.ItemStatus</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <input type="hidden" id="SelectedItemID" name="SelectedItemID" />
-
-    <br />
-
-    <!-- UPDATE -->
-    <form method="post" asp-page-handler="Update">
-        <input type="hidden" name="SelectedItemID" id="SelectedItemIDUpdate" />
-        <button type="submit">Update Item</button>
-    </form>
-
-    <br />
-
-    <!-- REMOVE (STATUS CHANGE ONLY) -->
-    <form method="post" asp-page-handler="Remove">
-        <input type="hidden" name="SelectedItemID" id="SelectedItemIDRemove" />
-        <input type="hidden" name="reason" id="reason" />
-
-        <button type="submit" onclick="return setReason('Picked Up')">
-            Mark as Picked Up
-        </button>
-
-        <button type="submit" onclick="return setReason('Pulled out')">
-            Mark as Pulled out
-        </button>
-    </form>
+    <p style="color:red">@Model.Message</p>
 }
 
-<script>
-    function selectItem(id) {
-        document.getElementById("SelectedItemIDUpdate").value = id;
-        document.getElementById("SelectedItemIDRemove").value = id;
-    }
+@if (Model.Items.Count > 0)
+{
+    <h3>Items (InDA Only)</h3>
 
-    function setReason(value) {
-        document.getElementById("reason").value = value;
-        return confirm("Confirm change status to: " + value);
-    }
-</script>
+    <table border="1">
+        <tr>
+            <th>ItemID</th>
+            <th>SellerID</th>
+            <th>BuyerName</th>
+            <th>DateDropped</th>
+            <th>Price</th>
+            <th>HoldingFee</th>
+            <th>Status</th>
+            <th>Placed</th>
+            <th>DatePickedUp</th>
+        </tr>
+
+        @foreach (var i in Model.Items)
+        {
+            <tr>
+                <td>@i.ItemID</td>
+                <td>@i.SellerID</td>
+                <td>@i.BuyerName</td>
+                <td>@i.DateDropped</td>
+                <td>@i.Price</td>
+                <td>@i.HoldingFee</td>
+                <td>@i.ItemStatus</td>
+                <td>@i.Placed</td>
+                <td>@i.DatePickedUp</td>
+            </tr>
+        }
+    </table>
+
+    <hr />
+
+    <h3>Choose Item Action</h3>
+
+    <form method="post" asp-page-handler="ProcessAction">
+
+        <input type="hidden" asp-for="SellerID" />
+
+        <!-- ITEM NOW MANUAL INPUT -->
+        <label>Enter Item ID:</label>
+        <input asp-for="ItemID" type="number" required placeholder="Type Item ID" />
+
+        <br /><br />
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+            <button type="submit"
+                    onclick="document.getElementById('ActionType').value='Update'">
+                Update Item
+            </button>
+
+            <button type="submit"
+                    onclick="document.getElementById('ActionType').value='PickedUp'">
+                Picked Up
+            </button>
+
+            <button type="submit"
+                    onclick="document.getElementById('ActionType').value='PulledOut'">
+                Pulled Out
+            </button>
+
+        </div>
+
+        <input type="hidden" asp-for="ActionType" id="ActionType" />
+
+    </form>
+}

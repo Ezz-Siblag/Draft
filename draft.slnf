@@ -1,0 +1,8 @@
+{
+  "solution": {
+    "path": "Testing.slnx",
+    "projects": [
+      "Testing\\Testing.csproj"
+    ]
+  }
+}
